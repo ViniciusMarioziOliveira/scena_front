@@ -5,8 +5,22 @@ body {
   background-color: #F5F0E8;
   font-family: 'DM Sans', sans-serif;
   color: #2D2926;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh;      /* Mudamos de min-height para height fixo */
+  overflow: hidden;    /* Trava o scroll geral da página inteira */
+}
+
+/* ── Nova regra para a Left Column rolar independentemente ── */
+aside {
+  height: 100%;       /* Ocupa o tamanho máximo disponível da linha */
+  overflow-y: auto;   /* Ativa o scroll apenas vertical na coluna da esquerda */
+  scroll-behavior: smooth;
+  
+  /* Esconde a barra de rolagem no Chrome/Safari/Firefox para um visual mais limpo (opcional) */
+  -ms-overflow-style: none;  
+  scrollbar-width: none;  
+}
+aside::-webkit-scrollbar {
+  display: none; 
 }
 
 /* ── Grain overlay ── */
@@ -25,7 +39,7 @@ body::before {
 
 /* ── Chat scroll area ── */
 #chat-feed {
-  height: calc(100vh - 290px);
+  flex: 1;
   overflow-y: auto;
   scroll-behavior: smooth;
 }
