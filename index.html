@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scena</title>
+
+  <!-- Socket.IO client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Cormorant Garamond (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="img/logo.png"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300..700&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Smooch+Sans:wght@100..900&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream:   '#F5F0E8',
+            parchment: '#EDE6D6',
+            sand:    '#D9CEB8',
+            clay:    '#B8A898',
+            umber:   '#7A6A5A',
+            graphite:'#2D2926',
+            ink:     '#1A1714',
+            olive:   '#6B7356',
+            terracotta: '#A0674A',
+            sage:    '#8C9E7E',
+          },
+          fontFamily: {
+            display: ['"Cormorant Garamond"', 'serif'],
+            body:    ['"DM Sans"', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+</head>
+
+<body class="p-4 md:p-8 lg:p-12">
+
+  <!-- ══════════════════════════════════════
+       TOP BAR
+  ══════════════════════════════════════ -->
+  <header class="flex items-center justify-between mb-8 max-w-6xl mx-auto">
+    <div class="flex items-center gap-3">
+      <span class="font-display text-3xl font-light tracking-tight text-ink">Scena</span>
+      <span class="rule"></span>
+      <span class="text-xs font-body font-light text-umber tracking-widest uppercase">Tutor de Cenários</span>
+    </div>
+
+    <!-- Connection status pill -->
+    <div id="conn-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-parchment border border-sand text-xs font-body font-medium text-umber select-none">
+      <span class="relative flex h-2 w-2">
+        <span id="conn-ring" class="status-dot-ring hidden"></span>
+        <span id="conn-dot" class="relative inline-flex rounded-full h-2 w-2 bg-clay"></span>
+      </span>
+      <span id="conn-label">Conectando…</span>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════
+       MAIN GRID
+  ══════════════════════════════════════ -->
+  <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 items-start">
+
+    <!-- ── LEFT COLUMN ── -->
+    <aside class="flex flex-col gap-5">
+
+      <!-- Scene Card -->
+      <div id="scene-card" class="rounded-2xl p-6 flex flex-col gap-5">
+        <div>
+          <p class="text-xs tracking-widest uppercase font-body font-medium text-umber mb-1">Cena Atual</p>
+          <h2 id="scene-title" class="font-display text-2xl font-light text-ink leading-snug">Aguardando…</h2>
+        </div>
+
+        <div class="h-px bg-sand"></div>
+
+        <dl class="space-y-4 text-sm font-body w-full">
+          <div class="flex flex-col gap-1">
+            <dt class="text-clay font-medium uppercase tracking-widest text-[10px]">Local</dt>
+            <dd id="scene-local" class="text-graphite font-light break-words text-left">—</dd>
+          </div>
+          
+          <div class="flex flex-col gap-1">
+            <dt class="text-clay font-medium uppercase tracking-widest text-[10px]">Personagem</dt>
+            <dd id="scene-char" class="text-graphite font-light break-words text-left">—</dd>
+          </div>
+          
+          <div class="flex flex-col gap-1">
+            <dt class="text-clay font-medium uppercase tracking-widest text-[10px]">Idioma</dt>
+            <dd id="scene-lang" class="text-graphite font-light break-words text-left">Inglês</dd>
+          </div>
+        </dl>
+      </div>
+
+      <!-- Tips card -->
+      <div class="rounded-2xl p-5 bg-parchment border border-sand">
+        <p class="text-[10px] uppercase tracking-widest font-medium text-clay mb-3">Dicas de Uso</p>
+        <ul class="space-y-2 text-xs font-body font-light text-umber leading-relaxed">
+          <li class="flex gap-2"><span class="text-sage mt-0.5">◆</span> Responda como faria na vida real.</li>
+          <li class="flex gap-2"><span class="text-sage mt-0.5">◆</span> Correções aparecem <em class="text-olive">[entre colchetes]</em>.</li>
+          <li class="flex gap-2"><span class="text-sage mt-0.5">◆</span> Peça explicações a qualquer hora em PT-BR.</li>
+          <li class="flex gap-2"><span class="text-sage mt-0.5">◆</span> <kbd class="bg-sand rounded px-1">Enter</kbd> envia · <kbd class="bg-sand rounded px-1">Shift+Enter</kbd> quebra linha.</li>
+        </ul>
+      </div>
+
+    </aside>
+
+    <!-- ── RIGHT COLUMN: Chat ── -->
+    <section class="rounded-2xl bg-parchment border border-sand flex flex-col" style="min-height: 620px;">
+
+      <!-- Chat header -->
+      <div class="px-6 pt-5 pb-4 border-b border-sand flex items-center justify-between">
+        <div>
+          <p class="font-display text-lg font-light text-ink">Transcrição da Sessão</p>
+          <p class="text-[11px] font-body text-clay mt-0.5">As correções aparecem destacadas na linha do tempo</p>
+        </div>
+        <!-- Typing indicator -->
+        <div id="typing-indicator" class="hidden flex items-center gap-1 text-clay text-xs font-body">
+          <span class="dot">●</span><span class="dot">●</span><span class="dot">●</span>
+        </div>
+      </div>
+
+      <!-- Feed -->
+      <div id="chat-feed" class="flex-1 px-6 py-5 flex flex-col gap-6">
+        <!-- Messages injected here -->
+      </div>
+
+      <!-- Composer -->
+      <div class="px-6 pb-6 pt-4 border-t border-sand">
+        <div class="flex gap-3 items-end bg-cream rounded-xl border border-sand px-4 py-3 focus-within:border-umber transition-colors duration-200">
+          <textarea
+            id="msg-input"
+            class="flex-1 bg-transparent font-body font-light text-sm text-ink placeholder-clay outline-none"
+            placeholder="Digite sua resposta em inglês…"
+            rows="1"
+            disabled
+          ></textarea>
+          <button
+            id="send-btn"
+            class="flex-shrink-0 bg-graphite text-cream rounded-lg px-4 py-2 text-xs font-body font-medium tracking-wide"
+            disabled
+          >Enviar</button>
+        </div>
+        <p class="text-[10px] text-clay font-body mt-2 pl-1">Sessão protegida · sem gravação de dados pessoais</p>
+      </div>
+    </section>
+
+  </main><!-- /main -->
+
+  <!-- ══════════════════════════════════════
+       TOAST NOTIFICATION
+  ══════════════════════════════════════ -->
+  <div id="toast" class="hidden fixed bottom-6 right-6 z-50 bg-terracotta text-cream text-xs font-body font-medium px-4 py-3 rounded-xl shadow-lg max-w-xs">
+    <span id="toast-msg"></span>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       JAVASCRIPT
+  ══════════════════════════════════════ -->
+  <script>
+    // ── DOM refs ──────────────────────────────────────────────
+    const feed          = document.getElementById('chat-feed');
+    const input         = document.getElementById('msg-input');
+    const sendBtn       = document.getElementById('send-btn');
+    const typingEl      = document.getElementById('typing-indicator');
+    const connDot       = document.getElementById('conn-dot');
+    const connRing      = document.getElementById('conn-ring');
+    const connLabel     = document.getElementById('conn-label');
+    const sceneTitle    = document.getElementById('scene-title');
+    const sceneLocal    = document.getElementById('scene-local');
+    const sceneChar     = document.getElementById('scene-char');
+    const sceneLang     = document.getElementById('scene-lang');
+    const toastEl       = document.getElementById('toast');
+    const toastMsg      = document.getElementById('toast-msg');
+
+    // ── Socket ────────────────────────────────────────────────
+    const socket = io('https://xdbot-back.onrender.com', {
+      transports: ['websocket', 'polling'],
+    });
+
+    // ── Utilities ─────────────────────────────────────────────
+
+    /** Parse bot text: highlight [corrections] and detect scene metadata */
+    function parseBotText(raw) {
+      // Detect scene hints in first bot message (heuristic)
+      const localMatch = raw.match(/(?:aeroporto|hotel|café|restaurante|rua|estação|banco|loja|imigração|check[- ]?in)[^,.\n]*/i);
+      const charMatch  = raw.match(/(?:agente|recepcionista|garçom|garçonete|atendente|policial|oficial)[^,.\n]*/i);
+      const langMatch  = raw.match(/\b(inglês|english|francês|french|espanhol|spanish|alemão|german|italiano|italian)\b/i);
+
+      if (localMatch && sceneLocal.textContent === '—') {
+        sceneLocal.textContent = capitalize(localMatch[0].trim());
+        sceneTitle.textContent = capitalize(localMatch[0].trim()); // Mantém o título curto se quiser, ou tire o slice aqui também!
+      }
+      if (charMatch && sceneChar.textContent === '—') {
+        sceneChar.textContent = capitalize(charMatch[0].trim());
+      }
+      if (charMatch && sceneChar.textContent === '—') {
+        sceneChar.textContent = capitalize(charMatch[0].trim().slice(0, 35));
+      }
+      if (langMatch && sceneLang.textContent === '—') {
+        sceneLang.textContent = capitalize(langMatch[1]);
+      }
+
+      // Escape HTML then highlight [correction blocks]
+      const escaped = raw
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      return escaped.replace(/\[([^\]]+)\]/g, (_, inner) =>
+        `<span class="correction">[ ${inner} ]</span>`
+      );
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    /** Show toast notification */
+    let toastTimeout;
+    function showToast(msg, duration = 4000) {
+      toastMsg.textContent = msg;
+      toastEl.classList.remove('hidden');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toastEl.classList.add('hidden'), duration);
+    }
+
+    /** Append a message bubble to the feed */
+    function appendMessage(sender, htmlContent) {
+      const wrapper = document.createElement('div');
+
+      if (sender === 'bot') {
+        wrapper.className = 'msg-bot flex flex-col gap-1 max-w-[90%]';
+        wrapper.innerHTML = `
+          <span class="text-[10px] font-body font-medium uppercase tracking-widest text-clay mb-0.5">Tutor</span>
+          <div class="bot-line font-display text-base font-light text-ink leading-relaxed">${htmlContent}</div>
+        `;
+      } else {
+        wrapper.className = 'msg-user self-end flex flex-col items-end gap-1 max-w-[85%]';
+        wrapper.innerHTML = `
+          <span class="text-[10px] font-body font-medium uppercase tracking-widest text-clay mb-0.5">Você</span>
+          <div class="bg-cream border border-sand rounded-xl px-4 py-3 font-body text-sm font-light text-graphite leading-relaxed">${htmlContent}</div>
+        `;
+      }
+
+      feed.appendChild(wrapper);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    /** Auto-resize textarea */
+    function autoResize() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+    }
+
+    /** Set connection UI state */
+    function setConnected(online) {
+      if (online) {
+        connDot.classList.replace('bg-clay', 'bg-sage');
+        connRing.classList.remove('hidden');
+        connLabel.textContent = 'Online';
+        input.disabled = false;
+        sendBtn.disabled = false;
+      } else {
+        connDot.classList.replace('bg-sage', 'bg-clay');
+        connRing.classList.add('hidden');
+        connLabel.textContent = 'Desconectado';
+        input.disabled = true;
+        sendBtn.disabled = true;
+      }
+    }
+
+    // ── Socket events ─────────────────────────────────────────
+
+    socket.on('connect', () => {
+      console.log('Socket conectado:', socket.id);
+      setConnected(true);
+      // Avisa o backend para gerar o cenário agora que a conexão está aberta e segura
+      socket.emit('iniciar_cenario');
+    });
+
+    socket.on('disconnect', () => {
+      setConnected(false);
+      showToast('Conexão encerrada. Recarregue a página para retomar a sessão.');
+    });
+
+    socket.on('connect_error', (err) => {
+      setConnected(false);
+      showToast('Não foi possível conectar ao servidor. Verifique se o back-end está rodando na porta 6500.');
+    });
+
+    socket.on('status_conexao', (data) => {
+      console.log('Status:', data);
+      // Optional: show a subtle system line
+      const sys = document.createElement('p');
+      sys.className = 'text-[10px] text-center font-body text-clay py-1';
+      sys.textContent = '— sessão iniciada —';
+      feed.appendChild(sys);
+    });
+
+    socket.on('nova_mensagem', (data) => {
+      typingEl.classList.add('hidden');
+      const { remetente, texto } = data;
+      const isBot = remetente === 'bot';
+      const html  = isBot ? parseBotText(texto) : texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      appendMessage(remetente, html);
+    });
+
+    socket.on('erro', (data) => {
+      typingEl.classList.add('hidden');
+      showToast(data.erro || 'Ocorreu um erro inesperado.');
+    });
+
+    // ── Send message ──────────────────────────────────────────
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      // Render user bubble immediately
+      appendMessage('user', text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+
+      // Show typing indicator
+      typingEl.classList.remove('hidden');
+
+      // Emit to backend
+      socket.emit('enviar_mensagem', { mensagem: text });
+
+      // Clear input
+      input.value = '';
+      autoResize();
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    input.addEventListener('input', autoResize);
+  </script>
+</body>
+</html>
