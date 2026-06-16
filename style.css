@@ -5,20 +5,15 @@ body {
   background-color: #F5F0E8;
   font-family: 'DM Sans', sans-serif;
   color: #2D2926;
-  height: 100vh;      /* Mudamos de min-height para height fixo */
-  overflow: hidden;    /* Trava o scroll geral da página inteira */
+  min-height: 100vh;
 }
 
 /* ── Nova regra para a Left Column rolar independentemente ── */
 aside {
-  height: 100%;       /* Ocupa o tamanho máximo disponível da linha */
-  overflow-y: auto;   /* Ativa o scroll apenas vertical na coluna da esquerda */
-  scroll-behavior: smooth;
-  
-  /* Esconde a barra de rolagem no Chrome/Safari/Firefox para um visual mais limpo (opcional) */
-  -ms-overflow-style: none;  
-  scrollbar-width: none;  
+  height: auto;
+  overflow: visible;
 }
+
 aside::-webkit-scrollbar {
   display: none; 
 }
